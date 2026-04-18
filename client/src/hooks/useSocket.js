@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://localhost:5001";
+const SOCKET_URL = "http://localhost:5000";
 
 export function useSocket(roomId) {
   const [onlineCount, setOnlineCount] = useState(0);
