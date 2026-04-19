@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
+import Link from "../models/Link.js";
 
 // @desc    Register a new user
 // @route   POST /api/users/register
@@ -93,5 +94,40 @@ export const loginUser = async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
+  }
+};
+
+// @desc    Get current user profile
+// @route   GET /api/users/profile
+// @access  Private
+export const getMyProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select("-password").lean();
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const totalUrlsPosted = await Link.countDocuments({ user: req.user.id });
+    const activeUrls = await Link.countDocuments({
+      user: req.user.id,
+      $or: [{ isArchived: false }, { isArchived: { $exists: false } }],
+    });
+    const archivedUrls = await Link.countDocuments({
+      user: req.user.id,
+      isArchived: true,
+    });
+
+    return res.json({
+      user,
+      stats: {
+        totalUrlsPosted,
+        activeUrls,
+        archivedUrls,
+      },
+    });
+  } catch (err) {
+    console.error(err.message);
+    return res.status(500).send("Server error");
   }
 };

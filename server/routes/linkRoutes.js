@@ -4,7 +4,8 @@ import {
   getLinks,
   deleteLink,
   archiveLink,
-  restoreLink
+  restoreLink,
+  moveLinkToProject,
 } from "../controllers/linkController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.put("/:id/archive", authMiddleware, archiveLink);
 router.put("/:id/restore", authMiddleware, restoreLink);
+router.put("/:id/project", authMiddleware, moveLinkToProject);
 
 // @route   POST /api/links/ingest
 // @desc    Scrape and save a new link

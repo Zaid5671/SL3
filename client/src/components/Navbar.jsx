@@ -1,14 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-export default function Navbar() {
+export default function Navbar({ roomOnlineCount = null }) {
   const [scrolled, setScrolled] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  
+  const roomId = sessionStorage.getItem("shelfRoomId");
+  const roomName = sessionStorage.getItem("shelfRoomName");
+  const showRoomBadge = !!roomId && !roomId.startsWith("PERSONAL_");
+  const showRoomOnlineCount =
+    showRoomBadge && typeof roomOnlineCount === "number";
+  const roomOnlineLabel =
+    roomOnlineCount === 1
+      ? "1 person in room"
+      : `${roomOnlineCount} people in room`;
+
   let activeNav = "dashboard";
   if (location.pathname === "/graveyard") activeNav = "graveyard";
   if (location.pathname === "/room") activeNav = "room";
+  if (location.pathname === "/profile") activeNav = "profile";
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 30);
@@ -18,6 +28,8 @@ export default function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    sessionStorage.removeItem("shelfRoomId");
+    sessionStorage.removeItem("shelfRoomName");
     navigate("/login");
   };
 
@@ -25,6 +37,7 @@ export default function Navbar() {
     { id: "dashboard", label: "Dashboard", icon: "📊", path: "/" },
     { id: "room", label: "Rooms", icon: "🤝", path: "/room" },
     { id: "graveyard", label: "Graveyard", icon: "🪦", path: "/graveyard" },
+    { id: "profile", label: "Profile", icon: "👤", path: "/profile" },
   ];
 
   let themeColor = "#00D6FF"; // Default Cyan
@@ -46,13 +59,21 @@ export default function Navbar() {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        background: scrolled ? "rgba(255, 255, 255, 0.02)" : "rgba(255, 255, 255, 0.00)",
+        background: scrolled
+          ? "rgba(255, 255, 255, 0.02)"
+          : "rgba(255, 255, 255, 0.00)",
         backdropFilter: scrolled ? "blur(32px) saturate(150%)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(32px) saturate(150%)" : "none",
         borderRadius: scrolled ? "36px" : "0px",
-        border: scrolled ? "1px solid rgba(255, 255, 255, 0.06)" : "1px solid transparent",
-        borderBottom: !scrolled ? "1px solid rgba(255,255,255,0.04)" : "1px solid rgba(255, 255, 255, 0.06)",
-        boxShadow: scrolled ? "0 24px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)" : "none",
+        border: scrolled
+          ? "1px solid rgba(255, 255, 255, 0.06)"
+          : "1px solid transparent",
+        borderBottom: !scrolled
+          ? "1px solid rgba(255,255,255,0.04)"
+          : "1px solid rgba(255, 255, 255, 0.06)",
+        boxShadow: scrolled
+          ? "0 24px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08)"
+          : "none",
         transition: "all 0.6s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
@@ -65,18 +86,22 @@ export default function Navbar() {
           cursor: "pointer",
           transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
-        onMouseOver={(e) => { e.currentTarget.style.transform = "scale(1.05)"; }}
-        onMouseOut={(e) => { e.currentTarget.style.transform = "scale(1)"; }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.transform = "scale(1.05)";
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.transform = "scale(1)";
+        }}
       >
-        <img 
-          src="/brand-logo-v2.png" 
-          alt="ShelfLife Logo" 
-          style={{ 
-            height: "44px", 
-            width: "auto", 
+        <img
+          src="/brand-logo-v2.png"
+          alt="ShelfLife Logo"
+          style={{
+            height: "44px",
+            width: "auto",
             objectFit: "contain",
-            filter: "drop-shadow(0 2px 12px rgba(255,255,255,0.15))"
-          }} 
+            filter: "drop-shadow(0 2px 12px rgba(255,255,255,0.15))",
+          }}
         />
       </div>
 
@@ -97,9 +122,10 @@ export default function Navbar() {
             style={{
               background: "none",
               border: "none",
-              color: activeNav === item.id
-                ? "rgba(255,255,255,0.92)"
-                : "rgba(255,255,255,0.50)",
+              color:
+                activeNav === item.id
+                  ? "rgba(255,255,255,0.92)"
+                  : "rgba(255,255,255,0.50)",
               fontFamily: "'Inter', sans-serif",
               fontWeight: activeNav === item.id ? 600 : 400,
               fontSize: "15px",
@@ -112,46 +138,114 @@ export default function Navbar() {
               position: "relative",
             }}
             onMouseOver={(e) => {
-              if (activeNav !== item.id) e.currentTarget.style.color = "rgba(255,255,255,0.8)";
+              if (activeNav !== item.id)
+                e.currentTarget.style.color = "rgba(255,255,255,0.8)";
             }}
             onMouseOut={(e) => {
-              if (activeNav !== item.id) e.currentTarget.style.color = "rgba(255,255,255,0.50)";
+              if (activeNav !== item.id)
+                e.currentTarget.style.color = "rgba(255,255,255,0.50)";
             }}
           >
             <span>{item.icon}</span>
             {item.label}
             {/* Active underline indicator */}
             {activeNav === item.id && (
-              <div style={{
-                position: "absolute",
-                bottom: -2,
-                left: 0,
-                right: 0,
-                height: 2,
-                background: themeColor,
-                borderRadius: 2,
-                boxShadow: `0 0 10px ${themeColor}`
-              }} />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: -2,
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  background: themeColor,
+                  borderRadius: 2,
+                  boxShadow: `0 0 10px ${themeColor}`,
+                }}
+              />
             )}
             {/* Premium Glowing Red Indicator for Active Room */}
             {activeNav === "room" && item.id === "room" && (
-              <div style={{
-                position: "absolute",
-                top: -2,
-                right: -8,
-                width: 6,
-                height: 6,
-                background: "#FF3B30",
-                borderRadius: "50%",
-                boxShadow: "0 0 8px #FF3B30, 0 0 12px #FF3B30",
-              }} />
+              <div
+                style={{
+                  position: "absolute",
+                  top: -2,
+                  right: -8,
+                  width: 6,
+                  height: 6,
+                  background: "#FF3B30",
+                  borderRadius: "50%",
+                  boxShadow: "0 0 8px #FF3B30, 0 0 12px #FF3B30",
+                }}
+              />
             )}
           </button>
         ))}
       </div>
 
+      {showRoomBadge && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            marginRight: "18px",
+            padding: "8px 14px",
+            borderRadius: "14px",
+            border: "1px solid rgba(0,214,255,0.2)",
+            background: "rgba(0,214,255,0.08)",
+            boxShadow: "inset 0 1px 0 rgba(255,255,255,0.05)",
+            minWidth: 0,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              color: "#00D6FF",
+              whiteSpace: "nowrap",
+            }}
+          >
+            ROOM
+          </span>
+          <span
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 13,
+              color: "rgba(255,255,255,0.9)",
+              maxWidth: 170,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            title={roomName || "Unnamed Shelf"}
+          >
+            {roomName || "Unnamed Shelf"}
+          </span>
+          <span
+            style={{
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.65)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            #{roomId}
+          </span>
+        </div>
+      )}
+
       {/* Live badge */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginRight: "24px" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginRight: "24px",
+        }}
+      >
         <span
           style={{
             width: 6,
@@ -168,10 +262,10 @@ export default function Navbar() {
             fontSize: 13,
             color: "rgba(255,255,255,0.60)",
             fontWeight: 400,
-            letterSpacing: "0.2px"
+            letterSpacing: "0.2px",
           }}
         >
-          System Online
+          {showRoomOnlineCount ? roomOnlineLabel : "System Online"}
         </span>
       </div>
       <button

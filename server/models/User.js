@@ -20,6 +20,16 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
+    profileTag: {
+      type: String,
+      default: null,
+      trim: true,
+      maxlength: 80,
+    },
+    profileTagUpdatedAt: {
+      type: Date,
+      default: null,
+    },
   },
   {
     timestamps: true,

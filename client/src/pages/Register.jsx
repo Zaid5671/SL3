@@ -98,46 +98,126 @@ function Hyperspeed({ speed = 1, starColor = "#1D9E75", bgColor = "#080b12" }) {
 // ─── REACT BITS: Spotlight Card ──────────────────────────────────────────────
 function SpotlightCard({ children, className = "", style = {} }) {
   const divRef = useRef(null);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [opacity, setOpacity] = useState(0);
+  const [panelHover, setPanelHover] = useState(false);
+  const [cursorFX, setCursorFX] = useState({ x: 50, y: 50, rx: 0, ry: 0 });
 
   const handleMouseMove = (e) => {
     if (!divRef.current) return;
     const rect = divRef.current.getBoundingClientRect();
-    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    const px = ((e.clientX - rect.left) / rect.width) * 100;
+    const py = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const x = Math.max(0, Math.min(100, px));
+    const y = Math.max(0, Math.min(100, py));
+
+    const normalizedX = (x - 50) / 50;
+    const normalizedY = (y - 50) / 50;
+
+    setCursorFX({
+      x,
+      y,
+      rx: -normalizedY * 2.8,
+      ry: normalizedX * 3.6,
+    });
+  };
+
+  const handleMouseLeave = () => {
+    setPanelHover(false);
+    setCursorFX({ x: 50, y: 50, rx: 0, ry: 0 });
   };
 
   return (
     <div
       ref={divRef}
       onMouseMove={handleMouseMove}
-      onMouseEnter={() => setOpacity(1)}
-      onMouseLeave={() => setOpacity(0)}
+      onMouseEnter={() => setPanelHover(true)}
+      onMouseLeave={handleMouseLeave}
       className={`spotlight-card ${className}`}
       style={{
         position: "relative",
         overflow: "hidden",
         borderRadius: "20px",
-        background: "rgba(255, 255, 255, 0.03)",
-        border: "1px solid rgba(255, 255, 255, 0.08)",
+        background:
+          "linear-gradient(155deg, rgba(29, 158, 117, 0.16), rgba(255, 255, 255, 0.08) 40%, rgba(255, 255, 255, 0.03) 100%)",
+        border: panelHover
+          ? "1px solid rgba(29, 158, 117, 0.42)"
+          : "1px solid rgba(255, 255, 255, 0.12)",
+        backdropFilter: "blur(30px) saturate(170%)",
+        WebkitBackdropFilter: "blur(30px) saturate(170%)",
+        boxShadow: panelHover
+          ? "0 30px 70px rgba(0,0,0,0.62), 0 0 0 1px rgba(29,158,117,0.12), inset 0 1px 0 rgba(255,255,255,0.28)"
+          : "0 24px 55px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.2)",
+        transform: `perspective(1200px) rotateX(${cursorFX.rx}deg) rotateY(${cursorFX.ry}deg)`,
+        transformStyle: "preserve-3d",
+        transition: panelHover
+          ? "box-shadow 180ms ease, border-color 180ms ease"
+          : "transform 280ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1), border-color 280ms cubic-bezier(0.16, 1, 0.3, 1)",
         ...style,
       }}
     >
       <div
-        className="spotlight"
         style={{
           position: "absolute",
-          top: 0,
-          left: 0,
-          width: "100%",
-          height: "100%",
+          inset: 0,
           pointerEvents: "none",
-          background: `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(29, 158, 117, 0.15), transparent 40%)`,
-          opacity: opacity,
-          transition: "opacity 0.3s ease",
-          zIndex: 1,
+          zIndex: 0,
+          background:
+            "linear-gradient(125deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.1) 34%, rgba(255,255,255,0.03) 58%, rgba(255,255,255,0.02) 100%)",
         }}
       />
+
+      <div
+        style={{
+          position: "absolute",
+          width: 220,
+          height: 220,
+          left: -78,
+          top: -112,
+          borderRadius: "50%",
+          pointerEvents: "none",
+          zIndex: 0,
+          opacity: 0.75,
+          filter: "blur(16px)",
+          background:
+            "radial-gradient(circle, rgba(29, 158, 117, 0.42) 0%, rgba(29, 158, 117, 0) 70%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          width: 180,
+          height: 180,
+          right: -58,
+          bottom: -86,
+          borderRadius: "50%",
+          pointerEvents: "none",
+          zIndex: 0,
+          opacity: 0.68,
+          filter: "blur(16px)",
+          background:
+            "radial-gradient(circle, rgba(29, 158, 117, 0.3) 0%, rgba(29, 158, 117, 0) 72%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          zIndex: 1,
+          opacity: panelHover ? 1 : 0,
+          transition: "opacity 220ms ease",
+          background: `linear-gradient(115deg,
+            rgba(255,255,255,0) ${Math.max(0, cursorFX.x - 18)}%,
+            rgba(255,255,255,0.08) ${Math.max(0, cursorFX.x - 6)}%,
+            rgba(255,255,255,0.18) ${cursorFX.x}%,
+            rgba(255,255,255,0.08) ${Math.min(100, cursorFX.x + 6)}%,
+            rgba(255,255,255,0) ${Math.min(100, cursorFX.x + 18)}%)`,
+          mixBlendMode: "screen",
+        }}
+      />
+
       <div style={{ position: "relative", zIndex: 2 }}>{children}</div>
     </div>
   );
@@ -167,6 +247,8 @@ const Register = () => {
       console.log("User registered successfully:", res.data);
       // Store the token and redirect
       localStorage.setItem("token", res.data.token);
+      sessionStorage.removeItem("shelfRoomId");
+      sessionStorage.removeItem("shelfRoomName");
       navigate("/"); // Redirect to home page after registration
     } catch (err) {
       console.error(
@@ -276,7 +358,6 @@ const Register = () => {
             maxWidth: "420px",
             padding: "40px",
             animation: "fadeUp 0.8s cubic-bezier(0.34, 1.05, 0.64, 1) both",
-            boxShadow: "0 24px 55px rgba(0,0,0,0.65)",
           }}
         >
           {/* Header */}

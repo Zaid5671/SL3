@@ -4,7 +4,18 @@ import axios from "axios";
 import Navbar from "../components/Navbar";
 import ScrollAnimationCanvas from "../components/ScrollAnimationCanvas";
 import FloatingOrbs from "../components/FloatingOrbs";
-import RadialProgress from "../components/RadialProgress";
+
+const getCreatedDaysAgo = (createdAt) => {
+  const createdTime = new Date(createdAt).getTime();
+  if (Number.isNaN(createdTime)) return "Unknown";
+
+  const dayMs = 1000 * 60 * 60 * 24;
+  const diffDays = Math.max(0, Math.floor((Date.now() - createdTime) / dayMs));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "1 day ago";
+  return `${diffDays} days ago`;
+};
 
 // ─── CARD COMPONENT ──────────────────────────────────────────────────────────
 function GraveyardCard({ card, index, onRestore, onDelete }) {
@@ -18,22 +29,29 @@ function GraveyardCard({ card, index, onRestore, onDelete }) {
         stiffness: 200,
         damping: 20,
       }}
-      whileHover={{ y: -8, scale: 1.02, boxShadow: `0 32px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)` }}
+      whileHover={{
+        y: -8,
+        scale: 1.02,
+        boxShadow: `0 32px 64px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)`,
+      }}
       style={{
         width: "100%",
+        height: "100%",
+        aspectRatio: "1 / 1",
         display: "flex",
         flexDirection: "column",
         gap: 16,
-        background: "rgba(255, 255, 255, 0.01)",
+        background: "rgba(238, 245, 255, 0.2)",
         backdropFilter: "blur(32px) saturate(120%)",
         WebkitBackdropFilter: "blur(32px) saturate(120%)",
-        border: `1px solid rgba(124, 58, 237, 0.1)`,
+        border: `1px solid rgba(255, 255, 255, 0.38)`,
         borderRadius: "32px",
         padding: "32px",
         overflow: "hidden",
         cursor: "pointer",
         position: "relative",
-        boxShadow: "0 12px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)",
+        boxShadow:
+          "0 12px 40px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.24)",
         transition: "all 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
       }}
     >
@@ -52,9 +70,9 @@ function GraveyardCard({ card, index, onRestore, onDelete }) {
             fontWeight: 600,
             padding: "6px 14px",
             borderRadius: "999px",
-            background: "rgba(124, 58, 237, 0.06)",
-            color: "#A855F7",
-            border: "1px solid rgba(124, 58, 237, 0.15)"
+            background: "rgba(124, 58, 237, 0.14)",
+            color: "#F5EFFE",
+            border: "1px solid rgba(124, 58, 237, 0.28)",
           }}
         >
           {card.icon} &nbsp; Archived
@@ -62,11 +80,11 @@ function GraveyardCard({ card, index, onRestore, onDelete }) {
         <span
           style={{
             fontSize: "13px",
-            color: "rgba(255,255,255,0.4)",
+            color: "rgba(255,255,255,0.78)",
             fontFamily: "'Inter', sans-serif",
           }}
         >
-          {new Date(card.createdAt).toLocaleDateString()}
+          {getCreatedDaysAgo(card.createdAt)}
         </span>
       </div>
 
@@ -79,7 +97,7 @@ function GraveyardCard({ card, index, onRestore, onDelete }) {
           lineHeight: 1.3,
           letterSpacing: "-0.3px",
           margin: 0,
-          color: "rgba(255,255,255,0.85)",
+          color: "rgba(255,255,255,0.98)",
         }}
       >
         {card.title}
@@ -94,7 +112,11 @@ function GraveyardCard({ card, index, onRestore, onDelete }) {
           lineHeight: 1.6,
           margin: 0,
           flex: 1,
-          color: "rgba(255,255,255,0.5)",
+          overflow: "hidden",
+          display: "-webkit-box",
+          WebkitLineClamp: 4,
+          WebkitBoxOrient: "vertical",
+          color: "rgba(255,255,255,0.88)",
         }}
       >
         {card.summary}
@@ -107,17 +129,24 @@ function GraveyardCard({ card, index, onRestore, onDelete }) {
           alignItems: "center",
           justifyContent: "space-between",
           paddingTop: 20,
-          borderTop: "1px solid rgba(255,255,255,0.05)",
+          borderTop: "1px solid rgba(255,255,255,0.22)",
         }}
       >
-        <span style={{ fontSize: "13px", fontFamily: "'Inter', sans-serif", color: "rgba(255,255,255,0.3)", flex: 1, textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+        <span
+          style={{
+            fontSize: "13px",
+            fontFamily: "'Inter', sans-serif",
+            color: "rgba(255,255,255,0.85)",
+            flex: 1,
+            textOverflow: "ellipsis",
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+          }}
+        >
           🔗 {card.source}
         </span>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <RadialProgress percentage={card.decay} color="#A855F7" size={28} />
-        </div>
       </div>
-      
+
       {/* Action Buttons */}
       <div style={{ display: "flex", gap: "12px", marginTop: "16px" }}>
         <button
@@ -155,7 +184,11 @@ function GraveyardCard({ card, index, onRestore, onDelete }) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            if(window.confirm("Permanently delete this item? This cannot be undone.")) {
+            if (
+              window.confirm(
+                "Permanently delete this item? This cannot be undone.",
+              )
+            ) {
               onDelete(card._id);
             }
           }}
@@ -197,7 +230,7 @@ export default function Graveyard() {
   const containerRef = useRef(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start start", "end end"]
+    offset: ["start start", "end end"],
   });
 
   useEffect(() => {
@@ -219,10 +252,14 @@ export default function Graveyard() {
   const handleRestore = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(`/api/links/${id}/restore`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setCards(cards.filter(c => c._id !== id));
+      await axios.put(
+        `/api/links/${id}/restore`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      setCards(cards.filter((c) => c._id !== id));
     } catch (err) {
       console.error(err);
     }
@@ -232,9 +269,9 @@ export default function Graveyard() {
     try {
       const token = localStorage.getItem("token");
       await axios.delete(`/api/links/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setCards(cards.filter(c => c._id !== id));
+      setCards(cards.filter((c) => c._id !== id));
     } catch (err) {
       console.error(err);
     }
@@ -267,18 +304,55 @@ export default function Graveyard() {
 
       <Navbar />
 
-      <div ref={containerRef} style={{ position: 'relative', width: '100%', minHeight: '400vh' }}>
+      <div
+        ref={containerRef}
+        style={{ position: "relative", width: "100%", minHeight: "400vh" }}
+      >
         {/* Sticky Canvas Container with purple/dark filter */}
-        <div style={{ position: 'sticky', top: 0, left: 0, width: '100%', height: '100vh', overflow: 'hidden', zIndex: 0 }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', filter: 'hue-rotate(-20deg) saturate(1.15) brightness(0.75) contrast(1.1)' }}>
-            <ScrollAnimationCanvas scrollYProgress={scrollYProgress} frameCount={240} imagePath="/2nnd/ezgif-frame-" />
+        <div
+          style={{
+            position: "sticky",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100vh",
+            overflow: "hidden",
+            zIndex: 0,
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              filter:
+                "hue-rotate(-20deg) saturate(1.15) brightness(0.75) contrast(1.1)",
+            }}
+          >
+            <ScrollAnimationCanvas
+              scrollYProgress={scrollYProgress}
+              frameCount={240}
+              imagePath="/2nnd/ezgif-frame-"
+            />
           </div>
           <FloatingOrbs />
           <div className="floating-particles" />
         </div>
 
         {/* Overlay Content */}
-        <div style={{ position: 'relative', zIndex: 10, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: '-100vh' }}>
+        <div
+          style={{
+            position: "relative",
+            zIndex: 10,
+            width: "100%",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            marginTop: "-100vh",
+          }}
+        >
           <div
             style={{
               position: "relative",
@@ -311,7 +385,8 @@ export default function Graveyard() {
                     margin: "0 0 16px",
                     color: "#ffffff",
                     lineHeight: 1.1,
-                    textShadow: "0 4px 30px rgba(0,0,0,0.6), 0 2px 10px rgba(124, 58, 237, 0.4)",
+                    textShadow:
+                      "0 4px 30px rgba(0,0,0,0.6), 0 2px 10px rgba(124, 58, 237, 0.4)",
                   }}
                 >
                   Welcome to the Graveyard
@@ -361,9 +436,16 @@ export default function Graveyard() {
                 >
                   Buried Items
                 </h2>
-                
+
                 {/* Search Bar */}
-                <div style={{ position: 'relative', flex: 1, minWidth: "250px", maxWidth: "350px" }}>
+                <div
+                  style={{
+                    position: "relative",
+                    flex: 1,
+                    minWidth: "250px",
+                    maxWidth: "350px",
+                  }}
+                >
                   <input
                     type="text"
                     placeholder="Search archive..."
@@ -392,17 +474,35 @@ export default function Graveyard() {
                       e.target.style.borderColor = "rgba(255, 255, 255, 0.06)";
                     }}
                   />
-                  <svg style={{ position: 'absolute', left: 14, top: 13, width: 16, height: 16, fill: "none", stroke: "rgba(255,255,255,0.4)", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }} viewBox="0 0 24 24">
+                  <svg
+                    style={{
+                      position: "absolute",
+                      left: 14,
+                      top: 13,
+                      width: 16,
+                      height: 16,
+                      fill: "none",
+                      stroke: "rgba(255,255,255,0.4)",
+                      strokeWidth: 2,
+                      strokeLinecap: "round",
+                      strokeLinejoin: "round",
+                    }}
+                    viewBox="0 0 24 24"
+                  >
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
                 </div>
-                
+
                 <motion.span
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{
+                    duration: 0.8,
+                    delay: 0.2,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                   style={{
                     color: "rgba(255,255,255,0.75)",
                     fontSize: "14px",
@@ -411,16 +511,39 @@ export default function Graveyard() {
                     textShadow: "0 2px 10px rgba(0,0,0,0.35)",
                   }}
                 >
-                  {cards.filter(card => 
-                    card.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    card.source?.toLowerCase().includes(searchQuery.toLowerCase())
-                  ).length} Items
+                  {
+                    cards.filter(
+                      (card) =>
+                        card.title
+                          ?.toLowerCase()
+                          .includes(searchQuery.toLowerCase()) ||
+                        card.source
+                          ?.toLowerCase()
+                          .includes(searchQuery.toLowerCase()),
+                    ).length
+                  }{" "}
+                  Items
                 </motion.span>
               </motion.div>
 
               {cards.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "100px 20px", color: "rgba(255,255,255,0.3)", fontFamily: "'Inter', sans-serif" }}>
-                  <div style={{ fontSize: "48px", marginBottom: "24px", opacity: 0.5 }}>🗄️</div>
+                <div
+                  style={{
+                    textAlign: "center",
+                    padding: "100px 20px",
+                    color: "rgba(255,255,255,0.3)",
+                    fontFamily: "'Inter', sans-serif",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: "48px",
+                      marginBottom: "24px",
+                      opacity: 0.5,
+                    }}
+                  >
+                    🗄️
+                  </div>
                   Archive is empty.
                 </div>
               ) : (
@@ -428,33 +551,49 @@ export default function Graveyard() {
                   layout
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
+                    gridTemplateColumns:
+                      "repeat(auto-fill, minmax(300px, 1fr))",
+                    gridAutoRows: "1fr",
                     gap: "28px",
                   }}
                 >
                   <AnimatePresence>
                     {cards
-                      .filter(card => 
-                        card.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                        card.source?.toLowerCase().includes(searchQuery.toLowerCase())
+                      .filter(
+                        (card) =>
+                          card.title
+                            ?.toLowerCase()
+                            .includes(searchQuery.toLowerCase()) ||
+                          card.source
+                            ?.toLowerCase()
+                            .includes(searchQuery.toLowerCase()),
                       )
                       .map((card, idx) => (
-                      <motion.div
-                        key={card._id}
-                        layout
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, filter: "blur(8px)" }}
-                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                      >
-                        <GraveyardCard 
-                          card={card} 
-                          index={idx} 
-                          onRestore={handleRestore} 
-                          onDelete={handleDelete}
-                        />
-                      </motion.div>
-                    ))}
+                        <motion.div
+                          key={card._id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{
+                            opacity: 0,
+                            scale: 0.95,
+                            filter: "blur(8px)",
+                          }}
+                          transition={{
+                            type: "spring",
+                            stiffness: 300,
+                            damping: 30,
+                          }}
+                          style={{ height: "100%" }}
+                        >
+                          <GraveyardCard
+                            card={card}
+                            index={idx}
+                            onRestore={handleRestore}
+                            onDelete={handleDelete}
+                          />
+                        </motion.div>
+                      ))}
                   </AnimatePresence>
                 </motion.div>
               )}

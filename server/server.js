@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 import userRoutes from "./routes/userRoutes.js";
 import linkRoutes from "./routes/linkRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js"; // ← NEW
+import projectRoutes from "./routes/projectRoutes.js";
+import { runContextFeedSweep } from "./services/contextFeedService.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +26,7 @@ app.use(cors());
 app.use("/api/users", userRoutes);
 app.use("/api/links", linkRoutes);
 app.use("/api/rooms", roomRoutes); // ← NEW
+app.use("/api/projects", projectRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)
@@ -33,6 +36,34 @@ mongoose
 app.get("/api/health", (req, res) => {
   res.json({ message: "SHELFLIFE Server is alive!" });
 });
+
+// Context Feed sweep: checks cards due for a grounded refresh.
+setInterval(
+  async () => {
+    try {
+      const result = await runContextFeedSweep({ limit: 8 });
+      if (result.processed > 0) {
+        console.log(`🧠 Context Feed refreshed for ${result.processed} cards.`);
+      }
+    } catch (error) {
+      console.error("Context Feed sweep error:", error.message || error);
+    }
+  },
+  6 * 60 * 60 * 1000,
+);
+
+setTimeout(async () => {
+  try {
+    const result = await runContextFeedSweep({ limit: 8 });
+    if (result.processed > 0) {
+      console.log(
+        `🧠 Initial Context Feed refresh processed ${result.processed} cards.`,
+      );
+    }
+  } catch (error) {
+    console.error("Initial Context Feed sweep error:", error.message || error);
+  }
+}, 20_000);
 
 // ─── SOCKET.IO LOGIC ──────────────────────────────────────────────────────────
 
@@ -50,14 +81,13 @@ function broadcastToRoom(roomId, type, payload) {
 // Shelf Weather: check every 60 seconds per room
 setInterval(() => {
   roomActivity.forEach((pings, roomId) => {
-    const weather =
-      pings > 30 ? "STORMY" :
-      pings > 10 ? "BREEZY" :
-      "FOGGY";
+    const weather = pings > 30 ? "STORMY" : pings > 10 ? "BREEZY" : "FOGGY";
 
     // Count how many users are in this room
     let roomOnline = 0;
-    connectedUsers.forEach((u) => { if (u.roomId === roomId) roomOnline++; });
+    connectedUsers.forEach((u) => {
+      if (u.roomId === roomId) roomOnline++;
+    });
 
     broadcastToRoom(roomId, "WEATHER_UPDATE", {
       weather,
@@ -90,7 +120,7 @@ io.on("connection", (socket) => {
     return;
   }
 
-  const userId   = decoded.user.id;
+  const userId = decoded.user.id;
   const username = decoded.user.username || "Anonymous";
 
   // ── 2. JOIN ROOM: client sends roomId after auth ──────────────────────────
@@ -105,7 +135,9 @@ io.on("connection", (socket) => {
     if (prev?.roomId) {
       socket.leave(prev.roomId);
       // Notify old room someone left
-      const oldCount = [...connectedUsers.values()].filter(u => u.roomId === prev.roomId).length;
+      const oldCount = [...connectedUsers.values()].filter(
+        (u) => u.roomId === prev.roomId,
+      ).length;
       broadcastToRoom(prev.roomId, "PRESENCE", { onlineCount: oldCount });
     }
 
@@ -119,7 +151,9 @@ io.on("connection", (socket) => {
     if (!roomActivity.has(upperRoomId)) roomActivity.set(upperRoomId, 0);
 
     // Count online users in this room
-    const roomOnline = [...connectedUsers.values()].filter(u => u.roomId === upperRoomId).length;
+    const roomOnline = [...connectedUsers.values()].filter(
+      (u) => u.roomId === upperRoomId,
+    ).length;
 
     // Tell everyone in the room about the new member
     broadcastToRoom(upperRoomId, "PRESENCE", { onlineCount: roomOnline });
@@ -132,7 +166,9 @@ io.on("connection", (socket) => {
       roomId: upperRoomId,
     });
 
-    console.log(`✅ ${username} joined room ${upperRoomId} (socket: ${socket.id})`);
+    console.log(
+      `✅ ${username} joined room ${upperRoomId} (socket: ${socket.id})`,
+    );
   });
 
   // ── 3. CURSOR MOVE — scoped to room ──────────────────────────────────────
@@ -163,15 +199,21 @@ io.on("connection", (socket) => {
     const payload = {
       socketId: socket.id,
       username: user.username,
-      cardId:   data.cardId,
-      emoji:    data.emoji,
+      cardId: data.cardId,
+      emoji: data.emoji,
     };
 
     // Send to everyone else in the room
-    socket.to(user.roomId).emit("message", { type: "EMOJI_REACTION", ...payload, fromSelf: false });
+    socket
+      .to(user.roomId)
+      .emit("message", { type: "EMOJI_REACTION", ...payload, fromSelf: false });
 
     // Echo back to sender so their animation also fires
-    socket.emit("message", { type: "EMOJI_REACTION", ...payload, fromSelf: true });
+    socket.emit("message", {
+      type: "EMOJI_REACTION",
+      ...payload,
+      fromSelf: true,
+    });
   });
 
   // ── 5. ACTIVITY PING ─────────────────────────────────────────────────────
@@ -187,9 +229,13 @@ io.on("connection", (socket) => {
     connectedUsers.delete(socket.id);
 
     if (user?.roomId) {
-      const roomOnline = [...connectedUsers.values()].filter(u => u.roomId === user.roomId).length;
+      const roomOnline = [...connectedUsers.values()].filter(
+        (u) => u.roomId === user.roomId,
+      ).length;
       broadcastToRoom(user.roomId, "PRESENCE", { onlineCount: roomOnline });
-      console.log(`❌ ${user.username} left room ${user.roomId} | Room online: ${roomOnline}`);
+      console.log(
+        `❌ ${user.username} left room ${user.roomId} | Room online: ${roomOnline}`,
+      );
     }
   });
 });

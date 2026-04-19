@@ -15,6 +15,12 @@ const linkSchema = new Schema(
       default: null,
       index: true,
     },
+    project: {
+      type: Schema.Types.ObjectId,
+      ref: "Project",
+      default: null,
+      index: true,
+    },
     originalUrl: {
       type: String,
       required: true,
@@ -49,6 +55,52 @@ const linkSchema = new Schema(
       type: Number,
       default: 0,
     },
+    contextFeed: {
+      status: {
+        type: String,
+        default: "pending",
+      },
+      summary: {
+        type: String,
+        default: "",
+      },
+      successorUrl: {
+        type: String,
+        default: "",
+      },
+      confidence: {
+        type: Number,
+        default: null,
+      },
+      sources: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      checkedAt: {
+        type: Date,
+        default: null,
+      },
+      provider: {
+        type: String,
+        default: "perplexity",
+      },
+      error: {
+        type: String,
+        default: "",
+      },
+    },
+    contextFeedLastCheckedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
+    contextFeedNextCheckAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     isArchived: {
       type: Boolean,
       default: false,
@@ -62,7 +114,7 @@ const linkSchema = new Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const Link = mongoose.model("Link", linkSchema);
