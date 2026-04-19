@@ -1,5 +1,12 @@
 import express from "express";
-import { createRoom, joinRoom } from "../controllers/roomController.js";
+import {
+  createRoom,
+  joinRoom,
+  setRoomVisibility,
+  getPublicRooms,
+  forkPublicRoom,
+  getRoomLineage,
+} from "../controllers/roomController.js";
 import authMiddleware from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
@@ -13,5 +20,9 @@ router.post("/create", authMiddleware, createRoom);
 // @desc    Join an existing room with roomId + password
 // @access  Private
 router.post("/join", authMiddleware, joinRoom);
+router.put("/:roomId/visibility", authMiddleware, setRoomVisibility);
+router.get("/public", authMiddleware, getPublicRooms);
+router.post("/:roomId/fork", authMiddleware, forkPublicRoom);
+router.get("/:roomId/lineage", authMiddleware, getRoomLineage);
 
 export default router;

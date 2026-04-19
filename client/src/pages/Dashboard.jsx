@@ -231,6 +231,171 @@ const getCardDaysAgo = (updatedAt, createdAt) => {
   return `${diffDays} days ago`;
 };
 
+function ProjectAssignmentDropdown({
+  projects,
+  selectedProjectId,
+  onChange,
+  disabled,
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const onPointerDown = (event) => {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  const selectedProject = (projects || []).find(
+    (project) => project._id === selectedProjectId,
+  );
+  const selectedLabel = selectedProject
+    ? `Add to project: ${selectedProject.title}`
+    : "Add as loose card (no project)";
+
+  return (
+    <div ref={wrapperRef} style={{ position: "relative", width: "100%" }}>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((prev) => !prev)}
+        style={{
+          width: "100%",
+          padding: "12px 16px",
+          borderRadius: "14px",
+          background: disabled
+            ? "rgba(255,255,255,0.015)"
+            : "linear-gradient(155deg, rgba(255,255,255,0.07), rgba(255,255,255,0.02))",
+          border: open
+            ? "1px solid rgba(0,214,255,0.35)"
+            : "1px solid rgba(255,255,255,0.12)",
+          color: disabled ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.9)",
+          fontFamily: "'Inter', sans-serif",
+          fontSize: "13px",
+          textAlign: "left",
+          cursor: disabled ? "not-allowed" : "pointer",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          boxShadow: open
+            ? "0 10px 28px rgba(0,214,255,0.18)"
+            : "inset 0 1px 0 rgba(255,255,255,0.06)",
+          transition: "all 0.2s ease",
+        }}
+      >
+        <span
+          style={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            paddingRight: 10,
+          }}
+        >
+          {selectedLabel}
+        </span>
+        <span
+          style={{
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
+            color: "rgba(255,255,255,0.72)",
+            fontSize: 12,
+          }}
+        >
+          ▾
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {open && !disabled && (
+          <motion.div
+            initial={{ opacity: 0, y: 8, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.98 }}
+            transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
+            style={{
+              position: "absolute",
+              top: "calc(100% + 8px)",
+              left: 0,
+              right: 0,
+              zIndex: 40,
+              borderRadius: 14,
+              border: "1px solid rgba(0,214,255,0.25)",
+              background:
+                "linear-gradient(165deg, rgba(8,16,32,0.95), rgba(8,16,32,0.88))",
+              boxShadow: "0 22px 52px rgba(0,0,0,0.55)",
+              overflow: "hidden",
+              backdropFilter: "blur(16px)",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+              style={{
+                width: "100%",
+                textAlign: "left",
+                padding: "12px 14px",
+                border: "none",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                background: !selectedProjectId
+                  ? "rgba(0,214,255,0.18)"
+                  : "transparent",
+                color: !selectedProjectId
+                  ? "#dff7ff"
+                  : "rgba(255,255,255,0.86)",
+                fontFamily: "'Inter', sans-serif",
+                fontSize: "13px",
+                cursor: "pointer",
+              }}
+            >
+              Add as loose card (no project)
+            </button>
+
+            <div style={{ maxHeight: 220, overflowY: "auto" }}>
+              {(projects || []).map((project) => {
+                const active = selectedProjectId === project._id;
+                return (
+                  <button
+                    key={project._id}
+                    type="button"
+                    onClick={() => {
+                      onChange(project._id);
+                      setOpen(false);
+                    }}
+                    style={{
+                      width: "100%",
+                      textAlign: "left",
+                      padding: "12px 14px",
+                      border: "none",
+                      borderBottom: "1px solid rgba(255,255,255,0.06)",
+                      background: active
+                        ? "rgba(0,214,255,0.18)"
+                        : "transparent",
+                      color: active ? "#dff7ff" : "rgba(255,255,255,0.88)",
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: "13px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Add to project: {project.title}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 // ─── CARD COMPONENT ──────────────────────────────────────────────────────────
 function GridCard({
   card,
@@ -1562,36 +1727,12 @@ export default function Dashboard() {
                 </button>
 
                 {projects.length > 0 && (
-                  <select
-                    value={selectedProjectId}
-                    onChange={(event) =>
-                      setSelectedProjectId(event.target.value)
-                    }
+                  <ProjectAssignmentDropdown
+                    projects={projects}
+                    selectedProjectId={selectedProjectId}
+                    onChange={setSelectedProjectId}
                     disabled={status !== "idle" || !!activeProject}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "14px",
-                      background: "rgba(255,255,255,0.02)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      color: "rgba(255,255,255,0.9)",
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: "13px",
-                    }}
-                  >
-                    <option value="" style={{ background: "#0b1020" }}>
-                      Add as loose card (no project)
-                    </option>
-                    {projects.map((project) => (
-                      <option
-                        key={project._id}
-                        value={project._id}
-                        style={{ background: "#0b1020" }}
-                      >
-                        Add to project: {project.title}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 )}
               </form>
 

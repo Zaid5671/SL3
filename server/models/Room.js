@@ -32,8 +32,33 @@ const roomSchema = new Schema(
       trim: true,
       default: "Unnamed Shelf",
     },
+    isPublic: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    parentRoom: {
+      type: Schema.Types.ObjectId,
+      ref: "Room",
+      default: null,
+      index: true,
+    },
+    rootRoom: {
+      type: Schema.Types.ObjectId,
+      ref: "Room",
+      default: null,
+      index: true,
+    },
+    lineageDepth: {
+      type: Number,
+      default: 0,
+    },
+    remixCount: {
+      type: Number,
+      default: 0,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Hash password before saving

@@ -363,24 +363,18 @@ const Login = () => {
         >
           {/* Header */}
           <div style={{ textAlign: "center", marginBottom: "32px" }}>
-            <div
+            <img
+              src="/brand-logo-v2.png"
+              alt="ShelfLife Logo"
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
+                height: 60,
+                width: "auto",
                 margin: "0 auto 16px",
-                background: "linear-gradient(135deg,#1D9E75,#0f6e56)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 20,
-                fontWeight: 800,
-                color: "#d0f5e8",
-                fontFamily: "'Syne', sans-serif",
+                display: "block",
+                objectFit: "contain",
+                filter: "drop-shadow(0 2px 12px rgba(255,255,255,0.15))",
               }}
-            >
-              S
-            </div>
+            />
             <h1
               style={{
                 fontFamily: "'Syne', sans-serif",
