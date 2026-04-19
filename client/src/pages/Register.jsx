@@ -241,7 +241,7 @@ const Register = () => {
     e.preventDefault();
     try {
       const res = await axios.post(
-        "https://shelflife-s9qm.onrender.com/api/users/register",
+        "http://localhost:5000/api/users/register",
         formData,
       );
       console.log("User registered successfully:", res.data);

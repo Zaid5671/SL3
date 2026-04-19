@@ -101,7 +101,7 @@ export default function Profile() {
 
       try {
         const response = await axios.get(
-          "https://shelflife-s9qm.onrender.com/api/users/profile",
+          "http://localhost:5000/api/users/profile",
           {
             headers: {
               Authorization: `Bearer ${token}`,
