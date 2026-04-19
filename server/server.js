@@ -22,7 +22,12 @@ const io = new Server(server, {
 app.locals.io = io;
 
 app.use(express.json());
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://sl-3.vercel.app", // Replace with your actual Vercel URL
+    credentials: true,
+  }),
+);
 app.use("/api/users", userRoutes);
 app.use("/api/links", linkRoutes);
 app.use("/api/rooms", roomRoutes); // ← NEW
