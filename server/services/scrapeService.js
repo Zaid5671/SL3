@@ -1,6 +1,6 @@
 import fetch from "node-fetch";
 import * as cheerio from "cheerio";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36";
@@ -11,6 +11,36 @@ const PUPPETEER_TIMEOUT_MS =
   Number(process.env.SCRAPE_PUPPETEER_TIMEOUT_MS) || 30000;
 const MAX_CONTENT_CHARS = 12000;
 const HEADLESS = process.env.PUPPETEER_HEADLESS !== "false";
+
+const isCloudRuntime = () =>
+  Boolean(process.env.RENDER || process.env.AWS_EXECUTION_ENV);
+
+const launchBrowser = async () => {
+  if (isCloudRuntime()) {
+    const chromium = (await import("@sparticuz/chromium")).default;
+
+    return puppeteer.launch({
+      args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
+    });
+  }
+
+  if (process.env.PUPPETEER_EXECUTABLE_PATH) {
+    return puppeteer.launch({
+      executablePath: process.env.PUPPETEER_EXECUTABLE_PATH,
+      headless: HEADLESS,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  }
+
+  const puppeteerFull = await import("puppeteer");
+  return puppeteerFull.default.launch({
+    headless: HEADLESS,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+};
 
 const CONTENT_SELECTORS = [
   "article",
@@ -179,10 +209,7 @@ const getBrowser = async () => {
   }
 
   if (!browserLaunchPromise) {
-    browserLaunchPromise = puppeteer.launch({
-      headless: HEADLESS,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    browserLaunchPromise = launchBrowser();
   }
 
   browserInstance = await browserLaunchPromise;

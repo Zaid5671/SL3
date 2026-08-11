@@ -73,7 +73,7 @@ flowchart LR
 2. In [Render](https://render.com), create a **Blueprint** from the repo (uses [`render.yaml`](render.yaml))  
    **or** create a **Web Service** manually:
    - **Root Directory:** `server`
-   - **Build Command:** `npm install && npx puppeteer browsers install chrome`
+   - **Build Command:** `npm install`
    - **Start Command:** `npm start`
    - **Health Check Path:** `/api/health`
 3. Set environment variables in Render:
@@ -88,7 +88,7 @@ flowchart LR
 
 4. Copy your Render service URL, e.g. `https://shelflife-api.onrender.com`
 
-**Note:** Puppeteer needs enough memory. Use at least Render's **Starter** plan (512MB+) for reliable link scraping.
+**Note:** Puppeteer on Render uses `@sparticuz/chromium` (no separate Chrome install step). Use at least Render's **Starter** plan (512MB+) for reliable link scraping.
 
 ### 2. Deploy frontend on Vercel
 
@@ -120,7 +120,7 @@ flowchart LR
 | CORS errors in browser | Ensure `CLIENT_URL` on Render matches your Vercel URL exactly |
 | Login/API fails | Confirm `VITE_API_URL` is set on Vercel and points to Render |
 | Socket.io won't connect | Set `VITE_SOCKET_URL` to the same Render URL; Render supports WebSockets |
-| Scraping fails on Render | Upgrade to Starter plan; ensure Chrome installed via build command |
+| Scraping fails on Render | Use Starter plan; Render uses `@sparticuz/chromium` automatically |
 | Render cold starts | Free tier spins down after inactivity; first request may be slow |
 
 ---
