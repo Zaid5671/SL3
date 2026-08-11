@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import axios from "axios";
+import api from "../lib/api";
 import Navbar from "../components/Navbar";
 import FloatingOrbs from "../components/FloatingOrbs";
 
@@ -100,14 +100,11 @@ export default function Profile() {
       setError("");
 
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/users/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await api.get("/api/users/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
 
         setProfile(response.data);
       } catch (err) {

@@ -10,24 +10,24 @@ import linkRoutes from "./routes/linkRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js"; // ← NEW
 import projectRoutes from "./routes/projectRoutes.js";
 import { runContextFeedSweep } from "./services/contextFeedService.js";
+import { closeBrowser } from "./services/scrapeService.js";
+import { allowedOrigins, corsOptions } from "./config/cors.js";
 
 const app = express();
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: "*" },
+  cors: {
+    origin: allowedOrigins,
+    credentials: true,
+  },
 });
 
 // Make io accessible in controllers via app.locals
 app.locals.io = io;
 
 app.use(express.json());
-app.use(
-  cors({
-    origin: "https://sl-3.vercel.app", // Replace with your actual Vercel URL
-    credentials: true,
-  }),
-);
+app.use(cors(corsOptions));
 app.use("/api/users", userRoutes);
 app.use("/api/links", linkRoutes);
 app.use("/api/rooms", roomRoutes); // ← NEW
@@ -112,6 +112,12 @@ io.on("connection", (socket) => {
   const token = socket.handshake.auth?.token;
   if (!token) {
     console.log("❌ No token, disconnecting socket:", socket.id);
+    socket.disconnect();
+    return;
+  }
+
+  if (!process.env.JWT_SECRET) {
+    console.error("JWT_SECRET is not configured.");
     socket.disconnect();
     return;
   }
@@ -246,6 +252,20 @@ io.on("connection", (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌐 Allowed origins: ${allowedOrigins.join(", ")}`);
+});
+
+const shutdown = async (signal) => {
+  console.log(`${signal} received. Shutting down...`);
+  await closeBrowser();
+  process.exit(0);
+};
+
+process.on("SIGINT", () => {
+  shutdown("SIGINT");
+});
+process.on("SIGTERM", () => {
+  shutdown("SIGTERM");
 });

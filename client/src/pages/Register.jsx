@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 
 // ─── REACT BITS: Hyperspeed (Canvas-based Star Warp) ─────────────────────────
 function Hyperspeed({ speed = 1, starColor = "#1D9E75", bgColor = "#080b12" }) {
@@ -240,10 +240,7 @@ const Register = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/users/register",
-        formData,
-      );
+      const res = await api.post("/api/users/register", formData);
       console.log("User registered successfully:", res.data);
       // Store the token and redirect
       localStorage.setItem("token", res.data.token);

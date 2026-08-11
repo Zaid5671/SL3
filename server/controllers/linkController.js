@@ -1,11 +1,10 @@
-import fetch from "node-fetch";
-import * as cheerio from "cheerio";
 import Groq from "groq-sdk";
 import Link from "../models/Link.js";
 import Project from "../models/Project.js";
 import Room from "../models/Room.js";
 import User from "../models/User.js";
 import { initializeContextFeedForNewLink } from "../services/contextFeedService.js";
+import { scrapeUrl } from "../services/scrapeService.js";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const FADE_START_DAYS = 14;
@@ -364,24 +363,16 @@ export const ingestLink = async (req, res) => {
   }
 
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.statusText}`);
-    }
-    const html = await response.text();
-
-    const $ = cheerio.load(html);
-    const scrapedTitle =
-      $("title").first().text() || $("h1").first().text() || "No title found";
-
-    $("script, style, nav, footer, header, aside").remove();
-    const content = $("body").text().replace(/\s\s+/g, " ").trim();
+    const scraped = await scrapeUrl(url);
+    const content = scraped.content || scraped.excerpt;
 
     if (!content) {
       return res
         .status(400)
         .json({ message: "Could not extract content from the URL." });
     }
+
+    console.log(`Scraped ${url} via ${scraped.method}`);
 
     const aiAnalysis = await getGroqChatCompletion(content);
     const aiVibe = normalizeVibe(aiAnalysis.vibe);
@@ -394,7 +385,7 @@ export const ingestLink = async (req, res) => {
       roomId: storageRoomId,
       project: targetProject?._id || null,
       originalUrl: url,
-      title: aiAnalysis.title || scrapedTitle,
+      title: aiAnalysis.title || scraped.title || new URL(url).hostname,
       summary: aiAnalysis.summary || "No summary available.",
       vibe: category || aiVibe || DEFAULT_VIBE,
       icon: aiAnalysis.icon || "📘",

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import axios from "axios";
+import api from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import FloatingOrbs from "../components/FloatingOrbs";
@@ -133,7 +133,7 @@ export default function RoomGate() {
   const fetchPublicRooms = async () => {
     setLoadingPublicRooms(true);
     try {
-      const { data } = await axios.get("/api/rooms/public", {
+      const { data } = await api.get("/api/rooms/public", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPublicRooms(data || []);
@@ -153,7 +153,7 @@ export default function RoomGate() {
     setLoading(true);
     setError("");
     try {
-      const { data } = await axios.get(`/api/rooms/${roomId}/lineage`, {
+      const { data } = await api.get(`/api/rooms/${roomId}/lineage`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setLineageData(data);
@@ -175,7 +175,7 @@ export default function RoomGate() {
     setError("");
     setLoading(true);
     try {
-      const { data } = await axios.post(
+      const { data } = await api.post(
         "/api/rooms/create",
         { name: createName, password: createPass, isPublic: createPublic },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -194,7 +194,7 @@ export default function RoomGate() {
     setError("");
     setLoading(true);
     try {
-      const { data } = await axios.post(
+      const { data } = await api.post(
         "/api/rooms/join",
         { roomId: joinId, password: joinPass },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -219,7 +219,7 @@ export default function RoomGate() {
     setError("");
     setLoading(true);
     try {
-      const { data } = await axios.post(
+      const { data } = await api.post(
         `/api/rooms/${selectedPublicRoomId}/fork`,
         {
           name: forkName,

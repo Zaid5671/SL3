@@ -1,8 +1,7 @@
 // src/hooks/useSocket.js
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io } from "socket.io-client";
-
-const SOCKET_URL = "http://localhost:5000";
+import { SOCKET_URL } from "../lib/api";
 
 export function useSocket(roomId) {
   const [onlineCount, setOnlineCount] = useState(0);
@@ -19,7 +18,7 @@ export function useSocket(roomId) {
 
     const socket = io(SOCKET_URL, {
       auth: { token },
-      transports: ["websocket"],
+      transports: ["websocket", "polling"],
       forceNew: true,
     });
     socketRef.current = socket;

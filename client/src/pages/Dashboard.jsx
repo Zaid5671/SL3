@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
-import axios from "axios";
+import api from "../lib/api";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import ScrollAnimationCanvas from "../components/ScrollAnimationCanvas";
@@ -742,7 +742,7 @@ function GridCard({
                 if (window.confirm("Move to Graveyard?")) {
                   const token = localStorage.getItem("token");
                   try {
-                    await axios.put(
+                    await api.put(
                       `/api/links/${card._id}/archive`,
                       {},
                       { headers: { Authorization: `Bearer ${token}` } },
@@ -1082,7 +1082,7 @@ export default function Dashboard() {
           ...(roomId ? { roomId } : {}),
           ...(isPersonalSpace ? { scope: "personal" } : {}),
         };
-        const { data } = await axios.get("/api/links", {
+        const { data } = await api.get("/api/links", {
           headers: { Authorization: `Bearer ${token}` },
           params,
         });
@@ -1110,7 +1110,7 @@ export default function Dashboard() {
           ...(isPersonalSpace ? { scope: "personal" } : {}),
         };
 
-        const { data } = await axios.get("/api/projects", {
+        const { data } = await api.get("/api/projects", {
           headers: { Authorization: `Bearer ${token}` },
           params,
         });
@@ -1152,7 +1152,7 @@ export default function Dashboard() {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`/api/links/${id}`, {
+      await api.delete(`/api/links/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCards((prev) => prev.filter((c) => c._id !== id));
@@ -1173,7 +1173,7 @@ export default function Dashboard() {
         ...(isPersonalSpace ? { scope: "personal" } : {}),
       };
 
-      const { data: newProject } = await axios.post("/api/projects", payload, {
+      const { data: newProject } = await api.post("/api/projects", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -1225,7 +1225,7 @@ export default function Dashboard() {
 
     try {
       const token = localStorage.getItem("token");
-      const { data: updated } = await axios.put(
+      const { data: updated } = await api.put(
         `/api/projects/${project._id}`,
         { title, description: nextDescription.trim() },
         { headers: { Authorization: `Bearer ${token}` } },
@@ -1252,7 +1252,7 @@ export default function Dashboard() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`/api/projects/${project._id}`, {
+      await api.delete(`/api/projects/${project._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -1286,7 +1286,7 @@ export default function Dashboard() {
         projectId: nextProjectId || null,
       };
 
-      const { data: updatedCard } = await axios.put(
+      const { data: updatedCard } = await api.put(
         `/api/links/${cardId}/project`,
         payload,
         { headers: { Authorization: `Bearer ${token}` } },
@@ -1371,7 +1371,7 @@ export default function Dashboard() {
         ...(selectedProjectId ? { projectId: selectedProjectId } : {}),
       };
 
-      const { data: newCard } = await axios.post("/api/links/ingest", payload, {
+      const { data: newCard } = await api.post("/api/links/ingest", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 

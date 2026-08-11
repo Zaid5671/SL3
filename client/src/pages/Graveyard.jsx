@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useScroll } from "framer-motion";
-import axios from "axios";
+import api from "../lib/api";
 import Navbar from "../components/Navbar";
 import ScrollAnimationCanvas from "../components/ScrollAnimationCanvas";
 import FloatingOrbs from "../components/FloatingOrbs";
@@ -237,7 +237,7 @@ export default function Graveyard() {
     const fetchLinks = async () => {
       try {
         const token = localStorage.getItem("token");
-        const { data } = await axios.get("/api/links?archived=true", {
+        const { data } = await api.get("/api/links?archived=true", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCards(Array.isArray(data) ? data : []);
@@ -252,7 +252,7 @@ export default function Graveyard() {
   const handleRestore = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.put(
+      await api.put(
         `/api/links/${id}/restore`,
         {},
         {
@@ -268,7 +268,7 @@ export default function Graveyard() {
   const handleDelete = async (id) => {
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`/api/links/${id}`, {
+      await api.delete(`/api/links/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCards(cards.filter((c) => c._id !== id));

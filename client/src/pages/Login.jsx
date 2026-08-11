@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../lib/api";
 
 // --- It's generally better to move these to their own files in a real app ---
 
@@ -241,10 +241,7 @@ const Login = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/users/login",
-        formData,
-      );
+      const res = await api.post("/api/users/login", formData);
       console.log("User logged in successfully:", res.data);
       // Store the token and redirect
       localStorage.setItem("token", res.data.token);
