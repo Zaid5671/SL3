@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 ﻿# ShelfLife
+=======
+# ShelfLife
+>>>>>>> 916ad7c5d29fefa8c16e01d17990a214c48404a9
 
 **The Resurrection of the Living Archive.**
 
