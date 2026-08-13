@@ -269,3 +269,35 @@ process.on("SIGINT", () => {
 process.on("SIGTERM", () => {
   shutdown("SIGTERM");
 });
+
+process.on("unhandledRejection", (reason) => {
+  if (isPuppeteerProcessError(reason)) {
+    console.error("Recovered from Puppeteer rejection:", reason?.message || reason);
+    closeBrowser().catch(() => {});
+    return;
+  }
+
+  console.error("Unhandled rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  if (isPuppeteerProcessError(error)) {
+    console.error("Recovered from Puppeteer crash:", error.message || error);
+    closeBrowser().catch(() => {});
+    return;
+  }
+
+  console.error("Uncaught exception:", error);
+  process.exit(1);
+});
+
+function isPuppeteerProcessError(error) {
+  const message = String(error?.message || error || "");
+  const name = String(error?.name || "");
+  return (
+    name === "TargetCloseError" ||
+    message.includes("Target closed") ||
+    message.includes("Session closed") ||
+    message.includes("Protocol error")
+  );
+}

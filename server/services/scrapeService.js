@@ -15,12 +15,20 @@ const HEADLESS = process.env.PUPPETEER_HEADLESS !== "false";
 const isCloudRuntime = () =>
   Boolean(process.env.RENDER || process.env.AWS_EXECUTION_ENV);
 
+const useSharedBrowser = () => !isCloudRuntime();
+
 const launchBrowser = async () => {
   if (isCloudRuntime()) {
     const chromium = (await import("@sparticuz/chromium")).default;
 
     return puppeteer.launch({
-      args: [...chromium.args, "--no-sandbox", "--disable-setuid-sandbox"],
+      args: [
+        ...chromium.args,
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
       headless: chromium.headless,
@@ -71,6 +79,7 @@ const NOISE_SELECTORS = [
 
 let browserInstance = null;
 let browserLaunchPromise = null;
+let scrapeQueue = Promise.resolve();
 
 const collapseWhitespace = (text) =>
   String(text || "")
@@ -203,13 +212,49 @@ const fetchStaticHtml = async (url) => {
   return response.text();
 };
 
-const getBrowser = async () => {
+const safeClose = async (resource, label) => {
+  if (!resource) return;
+  try {
+    await resource.close();
+  } catch (error) {
+    console.warn(`Failed to close ${label}:`, error.message || error);
+  }
+};
+
+const resetSharedBrowser = async () => {
+  browserLaunchPromise = null;
+  const browser = browserInstance;
+  browserInstance = null;
+
+  if (browser) {
+    try {
+      browser.removeAllListeners("disconnected");
+      await browser.close();
+    } catch (error) {
+      console.warn("Failed to reset shared browser:", error.message || error);
+    }
+  }
+};
+
+const attachBrowserLifecycle = (browser) => {
+  browser.on("disconnected", () => {
+    if (browserInstance === browser) {
+      browserInstance = null;
+      browserLaunchPromise = null;
+    }
+  });
+};
+
+const getSharedBrowser = async () => {
   if (browserInstance?.connected) {
     return browserInstance;
   }
 
   if (!browserLaunchPromise) {
-    browserLaunchPromise = launchBrowser();
+    browserLaunchPromise = launchBrowser().then((browser) => {
+      attachBrowserLifecycle(browser);
+      return browser;
+    });
   }
 
   browserInstance = await browserLaunchPromise;
@@ -217,18 +262,37 @@ const getBrowser = async () => {
   return browserInstance;
 };
 
+const isPuppeteerCrashError = (error) => {
+  const message = String(error?.message || error || "");
+  const name = String(error?.name || "");
+  return (
+    name === "TargetCloseError" ||
+    message.includes("Target closed") ||
+    message.includes("Session closed") ||
+    message.includes("Browser closed") ||
+    message.includes("Protocol error")
+  );
+};
+
 const fetchWithPuppeteer = async (url) => {
-  const browser = await getBrowser();
-  const page = await browser.newPage();
+  const shared = useSharedBrowser();
+  let browser = null;
+  let page = null;
 
   try {
+    browser = shared ? await getSharedBrowser() : await launchBrowser();
+    page = await browser.newPage();
+
+    page.setDefaultNavigationTimeout(PUPPETEER_TIMEOUT_MS);
+    page.setDefaultTimeout(PUPPETEER_TIMEOUT_MS);
+
     await page.setUserAgent(USER_AGENT);
     await page.setViewport({ width: 1280, height: 800 });
 
     await page.setRequestInterception(true);
     page.on("request", (request) => {
       const type = request.resourceType();
-      if (["image", "font", "media"].includes(type)) {
+      if (["image", "font", "media", "stylesheet"].includes(type)) {
         request.abort();
       } else {
         request.continue();
@@ -236,13 +300,21 @@ const fetchWithPuppeteer = async (url) => {
     });
 
     await page.goto(url, {
-      waitUntil: "networkidle2",
+      waitUntil: isCloudRuntime() ? "domcontentloaded" : "networkidle2",
       timeout: PUPPETEER_TIMEOUT_MS,
     });
 
-    return page.content();
+    return await page.content();
+  } catch (error) {
+    if (shared) {
+      await resetSharedBrowser();
+    }
+    throw error;
   } finally {
-    await page.close();
+    await safeClose(page, "page");
+    if (!shared) {
+      await safeClose(browser, "browser");
+    }
   }
 };
 
@@ -255,7 +327,7 @@ const mergeScrapeResults = (primary, fallback = {}) => ({
 const isScrapeSufficient = ({ content, excerpt }) =>
   content.length >= MIN_CONTENT_CHARS || excerpt.length > 0;
 
-export const scrapeUrl = async (url) => {
+const scrapeUrlInternal = async (url) => {
   let staticResult = { title: "", excerpt: "", content: "" };
 
   try {
@@ -290,7 +362,10 @@ export const scrapeUrl = async (url) => {
       };
     }
   } catch (error) {
-    console.warn("Puppeteer scrape failed:", error.message || error);
+    const label = isPuppeteerCrashError(error)
+      ? "Puppeteer browser crashed"
+      : "Puppeteer scrape failed";
+    console.warn(`${label}:`, error.message || error);
 
     if (isScrapeSufficient(staticResult)) {
       return {
@@ -310,15 +385,16 @@ export const scrapeUrl = async (url) => {
   throw new Error("Could not extract content from the URL.");
 };
 
-export const closeBrowser = async () => {
-  if (!browserInstance) return;
-
-  try {
-    await browserInstance.close();
-  } catch (error) {
-    console.warn("Failed to close Puppeteer browser:", error.message || error);
-  } finally {
-    browserInstance = null;
-    browserLaunchPromise = null;
+export const scrapeUrl = async (url) => {
+  if (!isCloudRuntime()) {
+    return scrapeUrlInternal(url);
   }
+
+  const task = scrapeQueue.then(() => scrapeUrlInternal(url));
+  scrapeQueue = task.catch(() => {});
+  return task;
+};
+
+export const closeBrowser = async () => {
+  await resetSharedBrowser();
 };

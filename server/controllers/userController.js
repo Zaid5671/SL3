@@ -70,7 +70,7 @@ export const loginUser = async (req, res) => {
     // Compare entered password with hashed password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: "Invalid credentials" });
+      return res.status(400).json({ message: "Wrong password" });
     }
 
     // Create JWT payload

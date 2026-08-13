@@ -231,29 +231,30 @@ const Login = () => {
     email: "",
     password: "",
   });
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const { email, password } = formData;
 
-  const onChange = (e) =>
+  const onChange = (e) => {
+    setError("");
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     try {
       const res = await api.post("/api/users/login", formData);
-      console.log("User logged in successfully:", res.data);
-      // Store the token and redirect
       localStorage.setItem("token", res.data.token);
       sessionStorage.removeItem("shelfRoomId");
       sessionStorage.removeItem("shelfRoomName");
-      navigate("/"); // Redirect to home page after login
+      navigate("/");
     } catch (err) {
-      console.error(
-        "Login error:",
-        err.response ? err.response.data : err.message,
-      );
-      // Here you would typically show an error message to the user
+      const message =
+        err.response?.data?.message ||
+        "Something went wrong. Please try again.";
+      setError(message);
     }
   };
 
@@ -419,6 +420,22 @@ const Login = () => {
                 required
               />
             </div>
+            {error && (
+              <p
+                style={{
+                  marginBottom: "16px",
+                  padding: "12px 14px",
+                  borderRadius: "10px",
+                  background: "rgba(239, 68, 68, 0.12)",
+                  border: "1px solid rgba(239, 68, 68, 0.35)",
+                  color: "#fca5a5",
+                  fontSize: "14px",
+                  textAlign: "center",
+                }}
+              >
+                {error}
+              </p>
+            )}
             <input className="submit-btn" type="submit" value="Sign In" />
           </form>
 
