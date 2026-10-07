@@ -1,5 +1,6 @@
 import Groq from "groq-sdk";
 import Link from "../models/Link.js";
+import { GROQ_MODEL, GROQ_REASONING_EFFORT } from "../config/groq.js";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -141,7 +142,8 @@ export const refreshContextFeedForLink = async (link) => {
 
   try {
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: GROQ_MODEL,
+      reasoning_effort: GROQ_REASONING_EFFORT,
       messages: [
         {
           role: "system",
@@ -154,7 +156,7 @@ export const refreshContextFeedForLink = async (link) => {
         },
       ],
       temperature: 0.2,
-      max_tokens: 260,
+      max_tokens: 1000,
       top_p: 1,
       response_format: { type: "json_object" },
     });

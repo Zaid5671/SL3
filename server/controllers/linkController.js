@@ -5,6 +5,7 @@ import Room from "../models/Room.js";
 import User from "../models/User.js";
 import { initializeContextFeedForNewLink } from "../services/contextFeedService.js";
 import { scrapeUrl } from "../services/scrapeService.js";
+import { GROQ_MODEL, GROQ_REASONING_EFFORT } from "../config/groq.js";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const FADE_START_DAYS = 14;
@@ -162,9 +163,10 @@ const updateUserProfileTag = async (userId) => {
     try {
       const chatCompletion = await groq.chat.completions.create({
         messages: [{ role: "user", content: prompt }],
-        model: "llama-3.3-70b-versatile",
+        model: GROQ_MODEL,
+        reasoning_effort: GROQ_REASONING_EFFORT,
         temperature: 0.4,
-        max_tokens: 40,
+        max_tokens: 400,
         top_p: 1,
         response_format: { type: "json_object" },
       });
@@ -242,9 +244,10 @@ async function getGroqChatCompletion(content) {
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
+      model: GROQ_MODEL,
+      reasoning_effort: GROQ_REASONING_EFFORT,
       temperature: 0.7,
-      max_tokens: 250,
+      max_tokens: 1000,
       top_p: 1,
       response_format: { type: "json_object" },
     });
@@ -280,9 +283,10 @@ async function getCategoryFromSummary(summary) {
   try {
     const chatCompletion = await groq.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "llama-3.3-70b-versatile",
+      model: GROQ_MODEL,
+      reasoning_effort: GROQ_REASONING_EFFORT,
       temperature: 0.5,
-      max_tokens: 50,
+      max_tokens: 400,
       top_p: 1,
       response_format: { type: "json_object" },
     });
